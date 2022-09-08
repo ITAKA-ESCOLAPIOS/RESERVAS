@@ -18,8 +18,10 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf.urls.static import static
 
+from reservas import views
 
 urlpatterns = [
-    path('reservas/', include('reservas.urls')),
+    path('reservas/', views.index),
+    path('catalogo/', views.catalogo),
     path('admin/', admin.site.urls),
 ]
