@@ -5,7 +5,6 @@
 
 
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>
 
 <div class="container bg-light rounded">
         <div class="h4 font-weight-bold text-center py-3">¿Qué quieres reservar?</div>
@@ -20,13 +19,14 @@
                         </div>
                         <div class="d-flex flex-column">
                             <b>Butanito</b>
-                            <p class="text-muted">23 classes</p>
+                            <p class="text-muted">{{ butanito_count }} disponibles</p>
                         </div>
                     </div>
                 </div>
                 </a>
             </div>
             <div class="col-lg-4 col-md-6 my-lg-0 my-3">
+                <a href="#" style="text-decoration: none; color: black">
                 <div class="box bg-white">
                     <div class="d-flex align-items-center">
                         <div class="rounded-circle mx-3  d-flex align-items-center justify-content-center pale-orange">
@@ -34,14 +34,14 @@
                         </div>
                         <div class="d-flex flex-column">
                             <b>Quemador</b>
-                            <a href="#">
-                                <p class="text-muted">5 classes</p>
-                            </a>
+                                <p class="text-muted">{{ quemador_count }} disponibles</p>
                         </div>
                     </div>
                 </div>
+                </a>
             </div>
             <div class="col-lg-4 col-md-6 my-lg-0 my-3">
+                <a href="#" style="text-decoration: none; color: black">
                 <div class="box bg-white">
                     <div class="d-flex align-items-center">
                         <div class="rounded-circle mx-3  d-flex align-items-center justify-content-center pale-purple">
@@ -49,12 +49,11 @@
                         </div>
                         <div class="d-flex flex-column">
                             <b>Tienda de campaña</b>
-                            <a href="#">
-                                <p class="text-muted">32 classes</p>
-                            </a>
+                                <p class="text-muted">{{ tienda_count }} disponibles</p>
                         </div>
                     </div>
                 </div>
+                </a>
             </div>
         </div>
     </div>
