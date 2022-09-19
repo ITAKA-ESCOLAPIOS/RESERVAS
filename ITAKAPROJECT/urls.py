@@ -14,14 +14,28 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf import settings
+from django.conf.urls import url
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, register_converter
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 from reservas import views
+from reservas.converters import DateConverter
+
+register_converter(DateConverter, 'date')
 
 urlpatterns = [
-    path('reservas/', views.index),
+    path('reserva_but/', views.reserva_but),
+    path('reserva_que/', views.reserva_que),
+    path('reserva_tie/', views.reserva_tie),
     path('catalogo/', views.catalogo),
     path('admin/', admin.site.urls),
+    path('register/', views.register_request, name='register'),
+    path('login/', views.login_request, name='login'),
+    path('logout/', views.logout_request, name='logout'),
+    path('reserva_but/<date:fecha_inicio>/<date:fecha_fin>', views.submit_but, name='submit_but'),
+    path('reserva_que/<date:fecha_inicio>/<date:fecha_fin>', views.submit_que, name='submit_que'),
+    path('reserva_tie/<date:fecha_inicio>/<date:fecha_fin>', views.submit_tie, name='submit_tie'),
+
 ]

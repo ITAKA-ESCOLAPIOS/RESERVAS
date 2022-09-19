@@ -1,9 +1,12 @@
+{% extends "main/header.html" %}
+
+{% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/css/bootstrap.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap-responsive.css">
 {% load static %}
 <link rel="stylesheet" href="{% static 'reservas/css/reservas.css' %}">
-<link rel="icon" href="{% static 'reservas/img/favicon.ico' %}">
+
 
 <script src="{% static 'reservas/js/minDateHasta.js' %}" type="text/javascript"></script>
 <script src="{% static 'reservas/js/reservas.js' %}" type="text/javascript"></script>
@@ -17,12 +20,15 @@
 <div class="container px-1 px-sm-5 mx-auto">
   <form autocomplete="off">
     <div class="flex-row d-flex justify-content-center">
-      <div class="col-lg-6 col-11">
+      <div class="col-lg-6 col-11 text-center">
         <div class="input-group input-daterange">
             <input placeholder="Desde" class="form-control input1" type="text" onfocus="(this.type='date')"
                    oninput="minDateHasta()" id="date-desde">
             <input placeholder="Hasta" class="form-control input2" type="text" onfocus="(this.type='date')" id="date-hasta">
         </div>
+          <br>
+            {% block boton %}
+            {% endblock %}
       </div>
     </div>
   </form>
@@ -45,3 +51,5 @@
     document.getElementById("date-hasta").setAttribute('min', minDate);
 
 </script>
+
+{% endblock %}
