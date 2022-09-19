@@ -5,6 +5,15 @@
 
 {% load crispy_forms_tags %}
 
+    {% for message in messages %}
+
+    <div class="alert alert-danger">
+        <a class="close" href="/login/" data-dismiss="alert">×</a>
+           {{ message }}
+    </div>
+
+    {% endfor %}
+
 <!--Login-->
 <div class="container py-5">
   <h1>Login</h1>

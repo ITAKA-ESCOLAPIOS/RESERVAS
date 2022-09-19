@@ -40,6 +40,17 @@ class Reserva(models.Model):
     object_id = models.CharField(max_length=3, validators=[MinLengthValidator(3)])
     content_object = GenericForeignKey('content_type', 'object_id')
 
+    class Meta:
+        abstract = True
+
+
+class HistoricoReservas(Reserva):
+    pass
+
+
+class FuturasReservas(Reserva):
+    pass
+
 
 class Usuario(AbstractUser):
     telefono = models.CharField(max_length=9, validators=[MinLengthValidator(9)])
