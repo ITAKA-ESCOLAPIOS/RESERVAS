@@ -1,5 +1,5 @@
 {% extends "reserva.html" %}
 
 {% block boton %}
-    <button type="submit" formmethod="post" class="btn btn-success btn-lg">Reservar butanito</button>
+    <button type="submit" formaction="{% url 'submit_but' %}" formmethod="post" class="btn btn-success btn-lg">Reservar butanito</button>
 {% endblock %}

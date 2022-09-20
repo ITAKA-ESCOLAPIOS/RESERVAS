@@ -8,7 +8,10 @@
       {% if user.is_authenticated %}
 
       <li class="nav-item">
-        <a class="nav-link" href="#">Bienvenido, {{user.username}}</a>
+        <a class="nav-link" href="/catalogo">Bienvenido, {{user.username}}</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/mis_reservas">Mis reservas</a>
       </li>
 
       {% else %}
@@ -22,7 +25,14 @@
   <ul class="navbar-nav ml-auto">
       {% if user.is_authenticated %}
       <li class="nav-item mr-auto">
+        <a class="nav-link" href="/password_reset">Cambiar contraseña</a>
+      </li>
+      <li class="nav-item mr-auto">
         <a class="nav-link" href="/logout">Cerrar sesión</a>
+      </li>
+      {% else %}
+      <li class="nav-item mr-auto">
+          <a class="nav-link" href="/password_reset">He olvidado mi contraseña :(</a>
       </li>
       {% endif %}
   </ul>

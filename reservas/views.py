@@ -1,3 +1,5 @@
+from itertools import chain
+
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
@@ -15,7 +17,7 @@ from django.utils.http import urlsafe_base64_encode
 from datetime import datetime
 
 from reservas.forms import NewUserForm
-from reservas.models import Butanito, FuturasReservas, HistoricoReservas, Observacion, Tienda, Usuario
+from reservas.models import Butanito, FuturasReservas, HistoricoReservas, Observacion, Tienda, Usuario, Quemador
 
 
 @login_required(login_url='/login')
@@ -40,50 +42,122 @@ def catalogo(request):
 
 @login_required(login_url='/login')
 def submit_but(request):
-    p_fecha_inicio = request.POST.get('date-desde')
-    p_fecha_inicio = datetime.strptime(p_fecha_inicio, '%Y-%m-%d')
-    p_fecha_inicio = p_fecha_inicio.date()
-    p_fecha_fin = request.POST.get('date-hasta')
-    p_fecha_fin = datetime.strptime(p_fecha_fin, '%Y-%m-%d')
-    p_fecha_fin = p_fecha_fin.date()
+    p_fecha_inicio, p_fecha_fin = __parse_datetime_to_date(request)
+    reserva_es_posible = False
+
+    # Iterar los butanitos del sistema a ver si está alguno libre en esas fechas
     for butanito in Butanito.objects.all():
         print("Chequeando id...")
         current_id = butanito.id_obj
         print(current_id)
-        encontrado = False
-        for reserva in FuturasReservas.objects.filter(object_id=current_id):
-            # Si no se solapan las fechas entra en el if
-            print(reserva.fecha_inicio)
-            if not ((reserva.fecha_inicio <= p_fecha_inicio <= reserva.fecha_fin) or
-                    (reserva.fecha_inicio <= p_fecha_fin <= reserva.fecha_fin) or
-                    (reserva.fecha_inicio <= p_fecha_inicio <= p_fecha_fin < reserva.fecha_fin) or
-                    (p_fecha_inicio <= reserva.fecha_inicio <= reserva.fecha_fin <= p_fecha_fin)):
-                phone = Usuario.objects.get(username=request.user.username).telefono
-                r = FuturasReservas(nombre=request.user.username,
-                                    apellido=request.user.last_name, email=request.user.email, telefono=phone,
-                                    fecha_inicio=p_fecha_inicio, fecha_fin=p_fecha_fin,
-                                    content_type_id=ContentType.objects.get_for_model(Butanito).id,
-                                    object_id=current_id)
-                r.save()
-                print("Reserva guardada")
-                encontrado = True
-                break
-            else:
-                print("Se solapan fechas")
-        if not encontrado:
-            print("No hay ninguno disponible para reservar :(")
+        reserva_es_posible = True
+        reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
+        if not reservas_futuras:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "butanito")
+            mensaje = "La reserva se ha completado satisfactoriamente"
+            break
+        else:
+            for reserva in reservas_futuras:
+                # Si no se solapan las fechas entra en el if
+                if __avaiable(reserva, p_fecha_inicio, p_fecha_fin):
+                    pass
+                # Si se solapan las fechas
+                else:
+                    reserva_es_posible = False
+                    print("Se solapan fechas, buscando otro butanito...")
+                    break
+        if reserva_es_posible:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "butanito")
+            mensaje = "La reserva se ha completado satisfactoriamente"
+    if not reserva_es_posible:
+        mensaje = "No hay ningún butanito disponible en esas fechas :("
 
-    return redirect('/catalogo/')
+    return redirect('/resultado_reserva/' + mensaje)
 
 
 @login_required(login_url='/login')
-def submit_que(request, fecha_inicio, fecha_fin):
-    pass
+def submit_que(request):
+    p_fecha_inicio, p_fecha_fin = __parse_datetime_to_date(request)
+    reserva_es_posible = False
+
+    # Iterar los quemadores del sistema a ver si está alguno libre en esas fechas
+    for quemador in Quemador.objects.all():
+        print("Chequeando id...")
+        current_id = quemador.id_obj
+        print(current_id)
+        reserva_es_posible = True
+        reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
+        if not reservas_futuras:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "quemador")
+            mensaje = "La reserva se ha completado satisfactoriamente :)"
+            break
+        else:
+            for reserva in reservas_futuras:
+                # Si no se solapan las fechas entra en el if
+                if __avaiable(reserva, p_fecha_inicio, p_fecha_fin):
+                    pass
+                # Si se solapan las fechas
+                else:
+                    reserva_es_posible = False
+                    print("Se solapan fechas, buscando otro quemador...")
+                    break
+        if reserva_es_posible:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "quemador")
+            mensaje = "La reserva se ha completado satisfactoriamente :)"
+    if not reserva_es_posible:
+        mensaje = "No hay ningún quemador disponible en esas fechas :(. No se ha completado la reserva"
+
+    return redirect('/resultado_reserva/' + mensaje)
+
+
+def resultado_reserva(request, mensaje):
+    return render(request, 'resultado_reserva.html', context={"mensaje": mensaje, "user": request.user})
 
 
 @login_required(login_url='/login')
 def submit_tie(request, fecha_inicio, fecha_fin):
-    pass
+    p_fecha_inicio, p_fecha_fin = __parse_datetime_to_date(request)
+    reserva_es_posible = False
+
+    # Iterar las tiendas del sistema a ver si está alguna libre en esas fechas
+    for tienda in Tienda.objects.all():
+        print("Chequeando id...")
+        current_id = tienda.id_obj
+        print(current_id)
+        reserva_es_posible = True
+        reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
+        if not reservas_futuras:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "tienda")
+            mensaje = "La reserva se ha completado satisfactoriamente"
+            break
+        else:
+            for reserva in reservas_futuras:
+                # Si no se solapan las fechas entra en el if
+                if __avaiable(reserva, p_fecha_inicio, p_fecha_fin):
+                    pass
+                # Si se solapan las fechas
+                else:
+                    reserva_es_posible = False
+                    print("Se solapan fechas, buscando otra tienda...")
+                    break
+        if reserva_es_posible:
+            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "tienda")
+            mensaje = "La reserva se ha completado satisfactoriamente"
+    if not reserva_es_posible:
+        mensaje = "No hay ninguna tienda disponible en esas fechas :(. No se ha completado la reserva"
+
+    return redirect('/resultado_reserva/' + mensaje)
+
+
+def mis_reservas(request):
+    return render(request, 'mis_reservas.html',
+                  context={"reservasFuturas": FuturasReservas.objects.filter(email=request.user.email),
+                           "reservasAntiguas": HistoricoReservas.objects.filter(email=request.user.email)})
+
+
+def eliminar_reserva(request, p_id):
+    FuturasReservas.objects.filter(id=p_id).delete()
+    return redirect('/mis_reservas')
 
 
 def register_request(request):
@@ -152,3 +226,47 @@ def password_reset_request(request):
     password_reset_form = PasswordResetForm()
     return render(request=request, template_name="main/password/password_reset.html",
                   context={"password_reset_form": password_reset_form})
+
+
+# AUXILIARES:
+
+def __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, object_type):
+    """Hace una reserva en el sistema. Método genérico para reservar cualquier tipo de objeto."""
+
+    phone = Usuario.objects.get(username=request.user.username).telefono
+
+    if str(object_type).lower() == "butanito":
+        content_type_id = ContentType.objects.get_for_model(Butanito).id
+    elif str(object_type).lower() == "quemador":
+        content_type_id = ContentType.objects.get_for_model(Quemador).id
+    elif str(object_type).lower() == "tienda":
+        content_type_id = ContentType.objects.get_for_model(Tienda).id
+    else:
+        content_type_id = ""
+    r = FuturasReservas(nombre=request.user.username,
+                        apellido=request.user.last_name, email=request.user.email, telefono=phone,
+                        fecha_inicio=p_fecha_inicio, fecha_fin=p_fecha_fin,
+                        content_type_id=content_type_id,
+                        object_id=current_id)
+    r.save()
+    print("Reserva guardada.")
+
+
+def __avaiable(reserva, p_fecha_inicio, p_fecha_fin):
+    # Si no se solapan las fechas devuelve True, False si se solapan.
+    return True if not ((reserva.fecha_inicio <= p_fecha_inicio <= reserva.fecha_fin) or
+                        (reserva.fecha_inicio <= p_fecha_fin <= reserva.fecha_fin) or
+                        (reserva.fecha_inicio <= p_fecha_inicio <= p_fecha_fin < reserva.fecha_fin) or
+                        (p_fecha_inicio <= reserva.fecha_inicio <= reserva.fecha_fin <= p_fecha_fin)) else False
+
+
+def __parse_datetime_to_date(request):
+    # Conseguir fechas del formulario y parsearlas a date y no datetime.
+    p_fecha_inicio = request.POST.get('date-desde')
+    p_fecha_inicio = datetime.strptime(p_fecha_inicio, '%Y-%m-%d')
+    p_fecha_inicio = p_fecha_inicio.date()
+    p_fecha_fin = request.POST.get('date-hasta')
+    p_fecha_fin = datetime.strptime(p_fecha_fin, '%Y-%m-%d')
+    p_fecha_fin = p_fecha_fin.date()
+
+    return p_fecha_inicio, p_fecha_fin

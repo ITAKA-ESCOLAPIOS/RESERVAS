@@ -1,5 +1,5 @@
 {% extends "reserva.html" %}
 
 {% block boton %}
-    <button type="button" class="btn btn-success btn-lg">Reservar tienda</button>
+    <button type="submit" formaction="{% url 'submit_tie' %}" formmethod="post" class="btn btn-success btn-lg">Reservar tienda</button>
 {% endblock %}

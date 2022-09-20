@@ -1,0 +1,37 @@
+{% extends "main/header.html" %}
+
+
+{% block content %}
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'reservas/css/catalogo.css' %}">
+    <h1>Mis reservas</h1>
+    {% for reserva in reservasFuturas.reverse %}
+    <div class="card">
+      <div class="card-header">
+        ID de la reserva: {{ reserva.id }}
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">{{ reserva.content_type.app_labeled_name | slice:'10:' | upper}} {{ reserva.object_id }}</h5>
+          <p class="card-text">Reservado desde <strong>{{ reserva.fecha_inicio }}</strong> hasta <strong>{{ reserva.fecha_fin }}</strong> a nombre de <strong>{{ reserva.email }}</strong></p>
+          <a href="{% url 'eliminar_reserva' p_id=reserva.id %}">Eliminar</a>
+      </div>
+    </div>
+        <br>
+    {% endfor %}
+    {% for reserva in reservasAntiguas.reverse %}
+    <div class="card">
+      <div class="card-header">
+        ID de la reserva: {{ reserva.id }}      (Reserva antigua)
+      </div>
+      <div class="card-body">
+        <h5 class="card-title">{{ reserva.content_type.app_labeled_name | slice:'10:' | upper}}</h5>
+          <p class="card-text">Reservado desde <strong>{{ reserva.fecha_inicio }}</strong> hasta <strong>{{ reserva.fecha_fin }}</strong> a nombre de <strong>{{ reserva.email }}</strong></p>
+      </div>
+    </div>
+        <br>
+    {% endfor %}
+    {% if not reservasAntiguas and not reservasFuturas %}
+        <div style="text-align: center; padding: 15%" class="card">No tienes nada reservado...</div>
+    {% endif %}
+{% endblock %}

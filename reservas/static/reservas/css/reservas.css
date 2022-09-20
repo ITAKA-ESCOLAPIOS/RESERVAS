@@ -1,7 +1,7 @@
 body {
     color: #000;
     overflow-x: hidden;
-    height: 100%;
+    width: 100%;
     background-image: url("../img/itaka-bg.jpg");
     background-position: center;
     background-size: cover;
