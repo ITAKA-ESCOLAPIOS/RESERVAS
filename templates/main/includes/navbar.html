@@ -23,7 +23,13 @@
       {% endif %}
     </ul>
   <ul class="navbar-nav ml-auto">
+  {% load group_extra %}
       {% if user.is_authenticated %}
+          {% if user.is_superuser or user|has_group:"encargado_material"%}
+           <li class="nav-item mr-auto">
+        <a class="nav-link" href="/admin">Administración</a>
+        </li>
+          {% endif %}
       <li class="nav-item mr-auto">
         <a class="nav-link" href="/password_reset">Cambiar contraseña</a>
       </li>

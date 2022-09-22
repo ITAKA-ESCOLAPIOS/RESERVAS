@@ -1,5 +1,3 @@
-from itertools import chain
-
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
@@ -13,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.conf import settings
 
 from datetime import datetime
 
@@ -37,7 +36,27 @@ def reserva_tie(request):
 
 @login_required(login_url='/login')
 def catalogo(request):
-    return render(request, 'catalogo.html')
+    butanito_count = Butanito.objects.count()
+    quemador_count = Quemador.objects.count()
+    tienda_count = Tienda.objects.count()
+    # Cada vez que se carga el catálogo se aprovecha para filtrar las reservas futuras y pasarlas a históricas si ya
+    # han pasado.
+    for reservaFutura in FuturasReservas.objects.all():
+        p_fecha_fin = datetime.strptime(str(reservaFutura.fecha_fin), '%Y-%m-%d')
+        p_fecha_fin = p_fecha_fin.date()
+        if p_fecha_fin < datetime.date(datetime.today()):
+            r_pasada = HistoricoReservas(id=reservaFutura.id,
+                                         nombre=reservaFutura.nombre,
+                                         apellido=reservaFutura.apellido,
+                                         email=reservaFutura.email, telefono=reservaFutura.telefono,
+                                         fecha_inicio=reservaFutura.fecha_inicio,
+                                         fecha_fin=reservaFutura.fecha_fin,
+                                         content_type=reservaFutura.content_type_id,
+                                         object_id=reservaFutura.object_id)
+            r_pasada.save()
+            reservaFutura.delete()
+    return render(request, 'catalogo.html', context={"butanito_count": butanito_count, "quemador_count": quemador_count,
+                                                     "tienda_count": tienda_count})
 
 
 @login_required(login_url='/login')
@@ -53,8 +72,10 @@ def submit_but(request):
         reserva_es_posible = True
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "butanito")
-            mensaje = "La reserva se ha completado satisfactoriamente"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "butanito")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el butanito " + \
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
         else:
             for reserva in reservas_futuras:
@@ -67,10 +88,12 @@ def submit_but(request):
                     print("Se solapan fechas, buscando otro butanito...")
                     break
         if reserva_es_posible:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "butanito")
-            mensaje = "La reserva se ha completado satisfactoriamente"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "butanito")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el butanito " + \
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
-        mensaje = "No hay ningún butanito disponible en esas fechas :("
+        mensaje = "No hay ningún butanito disponible en esas fechas. No se ha completado la reserva :("
 
     return redirect('/resultado_reserva/' + mensaje)
 
@@ -88,8 +111,10 @@ def submit_que(request):
         reserva_es_posible = True
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "quemador")
-            mensaje = "La reserva se ha completado satisfactoriamente :)"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "quemador")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el quemador " + \
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
         else:
             for reserva in reservas_futuras:
@@ -102,10 +127,12 @@ def submit_que(request):
                     print("Se solapan fechas, buscando otro quemador...")
                     break
         if reserva_es_posible:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "quemador")
-            mensaje = "La reserva se ha completado satisfactoriamente :)"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "quemador")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el quemador  " + \
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
-        mensaje = "No hay ningún quemador disponible en esas fechas :(. No se ha completado la reserva"
+        mensaje = "No hay ningún quemador disponible en esas fechas. No se ha completado la reserva :("
 
     return redirect('/resultado_reserva/' + mensaje)
 
@@ -115,7 +142,7 @@ def resultado_reserva(request, mensaje):
 
 
 @login_required(login_url='/login')
-def submit_tie(request, fecha_inicio, fecha_fin):
+def submit_tie(request):
     p_fecha_inicio, p_fecha_fin = __parse_datetime_to_date(request)
     reserva_es_posible = False
 
@@ -127,8 +154,10 @@ def submit_tie(request, fecha_inicio, fecha_fin):
         reserva_es_posible = True
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "tienda")
-            mensaje = "La reserva se ha completado satisfactoriamente"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "tienda")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado la tienda " +\
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
         else:
             for reserva in reservas_futuras:
@@ -141,18 +170,23 @@ def submit_tie(request, fecha_inicio, fecha_fin):
                     print("Se solapan fechas, buscando otra tienda...")
                     break
         if reserva_es_posible:
-            __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, "tienda")
-            mensaje = "La reserva se ha completado satisfactoriamente"
+            p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
+                                                                            current_id, "tienda")
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado la tienda " + \
+                      str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
-        mensaje = "No hay ninguna tienda disponible en esas fechas :(. No se ha completado la reserva"
+        mensaje = "No hay ninguna tienda disponible en esas fechas. No se ha completado la reserva :("
 
     return redirect('/resultado_reserva/' + mensaje)
 
 
 def mis_reservas(request):
     return render(request, 'mis_reservas.html',
-                  context={"reservasFuturas": FuturasReservas.objects.filter(email=request.user.email),
-                           "reservasAntiguas": HistoricoReservas.objects.filter(email=request.user.email)})
+                  context={"reservasFuturas": FuturasReservas.objects.filter(email=request.user.email).order_by(
+                      'fecha_inicio'),
+                           "reservasAntiguas": HistoricoReservas.objects.filter(email=request.user.email).order_by(
+                               'fecha_inicio'),
+                           "tiendas": Tienda.objects.all()})
 
 
 def eliminar_reserva(request, p_id):
@@ -206,7 +240,7 @@ def password_reset_request(request):
             associated_users = Usuario.objects.filter(Q(email=data))
             if associated_users.exists():
                 for user in associated_users:
-                    subject = "Password Reset Requested"
+                    subject = "Solicitud de cambio de contraseña"
                     email_template_name = "main/password/password_reset_email.txt"
                     c = {
                         "email": user.email,
@@ -219,7 +253,7 @@ def password_reset_request(request):
                     }
                     email = render_to_string(email_template_name, c)
                     try:
-                        send_mail(subject, email, 'admin@example.com', [user.email], fail_silently=False)
+                        send_mail(subject, email, settings.EMAIL_HOST_USER, [user.email], fail_silently=False)
                     except BadHeaderError:
                         return HttpResponse('Invalid header found.')
                     return redirect("/password_reset/done/")
@@ -250,6 +284,7 @@ def __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, object_typ
                         object_id=current_id)
     r.save()
     print("Reserva guardada.")
+    return current_id, p_fecha_inicio, p_fecha_fin
 
 
 def __avaiable(reserva, p_fecha_inicio, p_fecha_fin):

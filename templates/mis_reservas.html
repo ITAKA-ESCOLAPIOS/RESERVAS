@@ -12,7 +12,12 @@
         ID de la reserva: {{ reserva.id }}
       </div>
       <div class="card-body">
-        <h5 class="card-title">{{ reserva.content_type.app_labeled_name | slice:'10:' | upper}} {{ reserva.object_id }}</h5>
+        <h5 class="card-title">{{ reserva.content_type.app_labeled_name | slice:'10:' | upper}} {{ reserva.object_id }}
+            {% for tienda in tiendas %}
+                {% if tienda.id_obj == reserva.object_id %}
+                    {{ tienda.nombre }}
+                {% endif %}
+            {% endfor %}</h5>
           <p class="card-text">Reservado desde <strong>{{ reserva.fecha_inicio }}</strong> hasta <strong>{{ reserva.fecha_fin }}</strong> a nombre de <strong>{{ reserva.email }}</strong></p>
           <a href="{% url 'eliminar_reserva' p_id=reserva.id %}">Eliminar</a>
       </div>
