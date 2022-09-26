@@ -1,0 +1,8 @@
+{% autoescape off %}
+{{nombre}} ha reservado {{objeto}} desde el {{fecha_inicio}} hasta {{fecha_fin}}.
+
+Información de contacto:
+{{email}}
+{{telefono}}
+
+{% endautoescape %}

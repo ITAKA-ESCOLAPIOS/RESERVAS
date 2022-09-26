@@ -26,6 +26,7 @@ from reservas.converters import DateConverter
 register_converter(DateConverter, 'date')
 
 urlpatterns = [
+    path('', views.catalogo),
     path('reserva_but/', views.reserva_but),
     path('reserva_que/', views.reserva_que),
     path('reserva_tie/', views.reserva_tie),

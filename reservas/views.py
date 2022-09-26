@@ -73,7 +73,7 @@ def submit_but(request):
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "butanito")
+                                                                            current_id, "butanito", request.user)
             mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el butanito " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
@@ -89,7 +89,7 @@ def submit_but(request):
                     break
         if reserva_es_posible:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "butanito")
+                                                                            current_id, "butanito", request.user)
             mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el butanito " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
@@ -112,7 +112,7 @@ def submit_que(request):
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "quemador")
+                                                                            current_id, "quemador", request.user)
             mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el quemador " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
@@ -128,7 +128,7 @@ def submit_que(request):
                     break
         if reserva_es_posible:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "quemador")
+                                                                            current_id, "quemador", request.user)
             mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado el quemador  " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
@@ -155,8 +155,8 @@ def submit_tie(request):
         reservas_futuras = FuturasReservas.objects.filter(object_id=current_id)
         if not reservas_futuras:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "tienda")
-            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado la tienda " +\
+                                                                            current_id, "tienda", request.user)
+            mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado la tienda " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
             break
         else:
@@ -171,7 +171,7 @@ def submit_tie(request):
                     break
         if reserva_es_posible:
             p_id, context_fecha_inicio, context_fecha_fin = __hacer_reserva(request, p_fecha_inicio, p_fecha_fin,
-                                                                            current_id, "tienda")
+                                                                            current_id, "tienda", request.user)
             mensaje = "La reserva se ha completado satisfactoriamente. Se te ha asignado la tienda " + \
                       str(p_id) + " del " + str(context_fecha_inicio) + " al " + str(context_fecha_fin)
     if not reserva_es_posible:
@@ -184,13 +184,25 @@ def mis_reservas(request):
     return render(request, 'mis_reservas.html',
                   context={"reservasFuturas": FuturasReservas.objects.filter(email=request.user.email).order_by(
                       'fecha_inicio'),
-                           "reservasAntiguas": HistoricoReservas.objects.filter(email=request.user.email).order_by(
-                               'fecha_inicio'),
-                           "tiendas": Tienda.objects.all()})
+                      "reservasAntiguas": HistoricoReservas.objects.filter(email=request.user.email).order_by(
+                          'fecha_inicio'),
+                      "tiendas": Tienda.objects.all()})
 
 
 def eliminar_reserva(request, p_id):
     FuturasReservas.objects.filter(id=p_id).delete()
+    subject = "Reserva eliminada"
+    email_template_name = "main/reserva_eliminada.txt"
+    c = {
+        "email": request.user.email,
+        "id_reserva": p_id,
+        "nombre": request.user.username,
+    }
+    email = render_to_string(email_template_name, c)
+    try:
+        send_mail(subject, email, settings.EMAIL_HOST_USER, ["reservas.itakaescolapios@gmail.com"], fail_silently=False)
+    except BadHeaderError:
+        return HttpResponse('Invalid header found.')
     return redirect('/mis_reservas')
 
 
@@ -244,7 +256,7 @@ def password_reset_request(request):
                     email_template_name = "main/password/password_reset_email.txt"
                     c = {
                         "email": user.email,
-                        'domain': '127.0.0.1:8000',
+                        'domain': 'gilillo32.pythonanywhere.com.',  # TODO cambiar en producción
                         'site_name': 'Website',
                         "uid": urlsafe_base64_encode(force_bytes(user.pk)),
                         "user": user,
@@ -264,7 +276,7 @@ def password_reset_request(request):
 
 # AUXILIARES:
 
-def __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, object_type):
+def __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, object_type, user):
     """Hace una reserva en el sistema. Método genérico para reservar cualquier tipo de objeto."""
 
     phone = Usuario.objects.get(username=request.user.username).telefono
@@ -283,6 +295,21 @@ def __hacer_reserva(request, p_fecha_inicio, p_fecha_fin, current_id, object_typ
                         content_type_id=content_type_id,
                         object_id=current_id)
     r.save()
+    subject = "Nueva reserva"
+    email_template_name = "main/reserva_hecha.txt"
+    c = {
+        "email": user.email,
+        "objeto": current_id,
+        "nombre": user.username,
+        "fecha_inicio": p_fecha_inicio,
+        "fecha_fin": p_fecha_fin,
+        "telefono": phone,
+    }
+    email = render_to_string(email_template_name, c)
+    try:
+        send_mail(subject, email, settings.EMAIL_HOST_USER, ["reservas.itakaescolapios@gmail.com"], fail_silently=False)
+    except BadHeaderError:
+        return HttpResponse('Invalid header found.')
     print("Reserva guardada.")
     return current_id, p_fecha_inicio, p_fecha_fin
 

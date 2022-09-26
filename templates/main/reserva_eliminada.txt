@@ -1,0 +1,7 @@
+{% autoescape off %}
+{{nombre}} ha eliminado la reserva {{id_reserva}}.
+
+Información de contacto:
+{{email}}
+
+{% endautoescape %}
