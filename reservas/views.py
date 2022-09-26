@@ -256,7 +256,7 @@ def password_reset_request(request):
                     email_template_name = "main/password/password_reset_email.txt"
                     c = {
                         "email": user.email,
-                        'domain': 'gilillo32.pythonanywhere.com.',  # TODO cambiar en producción
+                        'domain': 'gilillo32.pythonanywhere.com',  # TODO cambiar en producción
                         'site_name': 'Website',
                         "uid": urlsafe_base64_encode(force_bytes(user.pk)),
                         "user": user,
